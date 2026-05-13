@@ -17,6 +17,18 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
+from django.urls import path
+from . import views
+
+app_name = "recebimentos"
+
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path("", views.dashboard, name="dashboard"),
+    path("listar/", views.listar, name="listar"),
+    path("novo/", views.criar, name="criar"),
+    path("<int:pk>/", views.detalhe, name="detalhe"),
+    path("<int:pk>/editar/", views.editar, name="editar"),
+    path("<int:pk>/confirmar/", views.confirmar, name="confirmar"),
+    path("<int:pk>/cancelar/", views.cancelar, name="cancelar"),
+    path("ajax/contratos/", views.contratos_por_centro, name="contratos_ajax"),
 ]
