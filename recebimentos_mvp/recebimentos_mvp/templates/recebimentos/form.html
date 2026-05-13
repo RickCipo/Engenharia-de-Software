@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block breadcrumb %}Movimentações / {{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <h4 class="fw-bold mb-0"><i class="bi bi-pencil-square me-2 text-primary"></i>{{ titulo }}</h4>
+  <a href="{% url 'recebimentos:listar' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Voltar</a>
+</div>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+  <div class="card">
+    <div class="card-header bg-white fw-semibold py-3"><i class="bi bi-cash-coin me-2 text-primary"></i>Dados da Movimentação</div>
+    <div class="card-body row g-3">
+
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Setor <span class="text-danger">*</span></label>
+        {{ form.setor }}
+        {% if form.setor.errors %}<div class="text-danger small mt-1">{{ form.setor.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Categoria <span class="text-danger">*</span></label>
+        {{ form.categoria }}
+        {% if form.categoria.errors %}<div class="text-danger small mt-1">{{ form.categoria.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label fw-semibold">Tipo <span class="text-danger">*</span></label>
+        {{ form.tipo }}
+        {% if form.tipo.errors %}<div class="text-danger small mt-1">{{ form.tipo.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label fw-semibold">Valor (R$) <span class="text-danger">*</span></label>
+        {{ form.valor }}
+        {% if form.valor.errors %}<div class="text-danger small mt-1">{{ form.valor.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label fw-semibold">Data da Movimentação <span class="text-danger">*</span></label>
+        {{ form.data_movimentacao }}
+        {% if form.data_movimentacao.errors %}<div class="text-danger small mt-1">{{ form.data_movimentacao.errors.0 }}</div>{% endif %}
+      </div>
+
+      {% if form.non_field_errors %}
+      <div class="col-12"><div class="alert alert-danger">{{ form.non_field_errors }}</div></div>
+      {% endif %}
+
+      <div class="col-12 d-flex gap-2 justify-content-end pt-2">
+        <a href="{% url 'recebimentos:listar' %}" class="btn btn-outline-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>{{ action }}</button>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}
