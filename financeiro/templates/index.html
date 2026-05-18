@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Sistema Financeiro - MVP</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+        .card { border: 1px solid #ddd; padding: 20px; border-radius: 8px; max-width: 500px; }
+        .btn { display: block; background: #007bff; color: white; padding: 10px; text-decoration: none; border-radius: 5px; margin-bottom: 10px; text-align: center; }
+        .btn:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>Controle de Gastos Corporativos</h1>
+    <div class="card">
+        <h3>Ações Disponíveis</h3>
+        <a href="{% url 'cadastrar_gasto' %}" class="btn">Cadastrar Novo Gasto</a>
+        <a href="{% url 'cadastrar_recebimento' %}" class="btn">Cadastrar Recebimento</a>
+        <a href="{% url 'listar_logs' %}" class="btn" style="background: #6c757d;">Ver Logs de Auditoria</a>
+        <form action="{% url 'logout' %}" method="post" style="display: inline;">
+            {% csrf_token %}
+            <button type="submit" style="background-color: #ff4d4d; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                Sair do Sistema
+            </button>
+        </form>
+    </div>
+</body>
+</html>
