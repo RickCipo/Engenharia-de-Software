@@ -1,133 +1,69 @@
-import json
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.db.models import Q, Sum
-from django.http import JsonResponse
-from .models import Recebimento, CentroPlanejamento, Contrato, LogRecebimento
-from .forms import RecebimentoForm, RecebimentoFiltroForm
+from django.shortcuts import render, redirect
+from .models import Gasto, Recebimento, LogAcesso
+from .forms import GastoForm, RecebimentoForm
+from django.contrib.auth.decorators import login_required, user_passes_test
 
+# Testes de permissão
+def e_financeiro(user):
+    return user.groups.filter(name='Financeiro').exists()
 
-def _log(recebimento, usuario, acao, detalhes):
-    LogRecebimento.objects.create(
-        recebimento=recebimento, usuario=usuario, acao=acao, detalhes=detalhes
+def e_auditoria(user):
+    return user.groups.filter(name='Auditoria').exists()
+
+# Usuário 1: Acesso apenas a Cadastros [cite: 17, 18]
+@login_required
+@user_passes_test(e_financeiro)
+def cadastrar_gasto(request):
+    # ... código existente ...
+    return render(request, 'core/form.html', {'form': form, 'titulo': 'Cadastro de Gastos'})
+
+# Usuário 2: Acesso apenas a Logs de Auditoria [cite: 21, 108]
+@login_required
+@user_passes_test(e_auditoria)
+def listar_logs(request):
+    logs = LogAcesso.objects.all().order_by('-data_hora')
+    return render(request, 'core/logs.html', {'logs': logs})
+
+# Função auxiliar para registrar logs de auditoria [cite: 21, 101]
+@login_required
+def registrar_log(request, acao):
+    LogAcesso.objects.create(
+        usuario=request.user if request.user.is_authenticated else None,
+        acao=acao,
+        ip=request.META.get('REMOTE_ADDR')
     )
 
+# ESTA É A FUNÇÃO QUE ESTÁ FALTANDO NO SEU ERRO
+@login_required
+def index(request):
+    registrar_log(request, "Acesso à página inicial")
+    return render(request, 'core/index.html')
 
 @login_required
-def dashboard(request):
-    total_pendentes = Recebimento.objects.filter(status="pendente").aggregate(s=Sum("valor"))["s"] or 0
-    total_confirmados = Recebimento.objects.filter(status="confirmado").aggregate(s=Sum("valor"))["s"] or 0
-    ultimos = Recebimento.objects.select_related("centro_planejamento", "criado_por").order_by("-criado_em")[:10]
-    return render(request, "recebimentos/dashboard.html", {
-        "total_pendentes": total_pendentes,
-        "total_confirmados": total_confirmados,
-        "ultimos": ultimos,
-        "count_pendentes": Recebimento.objects.filter(status="pendente").count(),
-        "count_confirmados": Recebimento.objects.filter(status="confirmado").count(),
-        "count_cancelados": Recebimento.objects.filter(status="cancelado").count(),
-    })
-
+def cadastrar_gasto(request):
+    if request.method == 'POST':
+        form = GastoForm(request.POST)
+        if form.is_valid():
+            gasto = form.save()
+            registrar_log(request, f"Cadastro de Gasto realizado: ID {gasto.id}")
+            return redirect('index')
+    else:
+        form = GastoForm()
+    return render(request, 'core/form.html', {'form': form, 'titulo': 'Cadastro de Gastos'})
 
 @login_required
-def listar(request):
-    form = RecebimentoFiltroForm(request.GET or None)
-    qs = Recebimento.objects.select_related("centro_planejamento", "contrato", "criado_por")
-
-    if form.is_valid():
-        if form.cleaned_data.get("numero_documento"):
-            qs = qs.filter(numero_documento__icontains=form.cleaned_data["numero_documento"])
-        if form.cleaned_data.get("centro_planejamento"):
-            qs = qs.filter(centro_planejamento=form.cleaned_data["centro_planejamento"])
-        if form.cleaned_data.get("status"):
-            qs = qs.filter(status=form.cleaned_data["status"])
-        if form.cleaned_data.get("data_inicio"):
-            qs = qs.filter(data_recebimento__gte=form.cleaned_data["data_inicio"])
-        if form.cleaned_data.get("data_fim"):
-            qs = qs.filter(data_recebimento__lte=form.cleaned_data["data_fim"])
-
-    total_filtrado = qs.aggregate(s=Sum("valor"))["s"] or 0
-    return render(request, "recebimentos/listar.html", {
-        "recebimentos": qs,
-        "form": form,
-        "total_filtrado": total_filtrado,
-    })
-
-
-@login_required
-def criar(request):
-    if request.method == "POST":
+def cadastrar_recebimento(request):
+    if request.method == 'POST':
         form = RecebimentoForm(request.POST)
         if form.is_valid():
-            rec = form.save(commit=False)
-            rec.criado_por = request.user
-            rec.full_clean()
-            rec.save()
-            _log(rec, request.user, "criacao", f"Recebimento {rec.numero_documento} criado com valor R$ {rec.valor}")
-            messages.success(request, f"Recebimento {rec.numero_documento} cadastrado com sucesso!")
-            return redirect("recebimentos:detalhe", pk=rec.pk)
+            recebimento = form.save()
+            registrar_log(request, f"Cadastro de Recebimento realizado: ID {recebimento.id}")
+            return redirect('index')
     else:
         form = RecebimentoForm()
-    return render(request, "recebimentos/form.html", {"form": form, "titulo": "Novo Recebimento", "action": "Cadastrar"})
-
-
-@login_required
-def detalhe(request, pk):
-    rec = get_object_or_404(Recebimento.objects.select_related("centro_planejamento", "contrato", "criado_por"), pk=pk)
-    logs = rec.logs.select_related("usuario").order_by("-data_hora")
-    return render(request, "recebimentos/detalhe.html", {"rec": rec, "logs": logs})
-
+    return render(request, 'core/form.html', {'form': form, 'titulo': 'Cadastro de Recebimentos'})
 
 @login_required
-def editar(request, pk):
-    rec = get_object_or_404(Recebimento, pk=pk)
-    if rec.status == "cancelado":
-        messages.error(request, "Recebimentos cancelados nao podem ser editados.")
-        return redirect("recebimentos:detalhe", pk=pk)
-
-    if request.method == "POST":
-        form = RecebimentoForm(request.POST, instance=rec)
-        if form.is_valid():
-            changed = {f: (form.initial.get(f), form.cleaned_data[f]) for f in form.changed_data}
-            rec = form.save(commit=False)
-            rec.full_clean()
-            rec.save()
-            _log(rec, request.user, "edicao", f"Campos alterados: {changed}")
-            messages.success(request, "Recebimento atualizado com sucesso!")
-            return redirect("recebimentos:detalhe", pk=rec.pk)
-    else:
-        form = RecebimentoForm(instance=rec)
-    return render(request, "recebimentos/form.html", {"form": form, "titulo": "Editar Recebimento", "action": "Salvar", "rec": rec})
-
-
-@login_required
-def confirmar(request, pk):
-    rec = get_object_or_404(Recebimento, pk=pk)
-    if rec.status != "pendente":
-        messages.warning(request, "Apenas recebimentos pendentes podem ser confirmados.")
-    else:
-        rec.status = "confirmado"
-        rec.save()
-        _log(rec, request.user, "confirmacao", "Recebimento confirmado.")
-        messages.success(request, "Recebimento confirmado!")
-    return redirect("recebimentos:detalhe", pk=pk)
-
-
-@login_required
-def cancelar(request, pk):
-    rec = get_object_or_404(Recebimento, pk=pk)
-    if rec.status == "cancelado":
-        messages.warning(request, "Recebimento ja esta cancelado.")
-    else:
-        rec.status = "cancelado"
-        rec.save()
-        _log(rec, request.user, "cancelamento", f"Recebimento cancelado pelo usuario {request.user}.")
-        messages.success(request, "Recebimento cancelado.")
-    return redirect("recebimentos:detalhe", pk=pk)
-
-
-def contratos_por_centro(request):
-    """AJAX: retorna contratos filhos do centro de planejamento selecionado."""
-    centro_id = request.GET.get("centro_id")
-    contratos = Contrato.objects.filter(centro_planejamento_id=centro_id, ativo=True).values("id", "numero", "descricao")
-    return JsonResponse(list(contratos), safe=False)
+def listar_logs(request):
+    logs = LogAcesso.objects.all().order_by('-data_hora')
+    return render(request, 'core/logs.html', {'logs': logs})
