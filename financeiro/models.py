@@ -3,20 +3,20 @@ from django.contrib.auth.models import User
 
 class Gasto(models.Model):
     data = models.DateField()
-    responsavel = models.CharField(max_length=100) # [cite: 58]
-    setor = models.CharField(max_length=100)      # [cite: 58]
-    montante = models.DecimalField(max_digits=10, decimal_places=2) # [cite: 59]
-    justificativa = models.TextField()             # [cite: 59]
+    responsavel = models.CharField(max_length=100) 
+    setor = models.CharField(max_length=100)      
+    montante = models.DecimalField(max_digits=10, decimal_places=2)
+    justificativa = models.TextField()             
 
     def __str__(self):
         return f"Gasto {self.id} - {self.setor}"
 
 class Recebimento(models.Model):
     data = models.DateField()
-    responsavel = models.CharField(max_length=100) # [cite: 82]
-    setor = models.CharField(max_length=100)      # [cite: 82]
-    montante = models.DecimalField(max_digits=10, decimal_places=2) # [cite: 83]
-    detalhes = models.TextField()                 # [cite: 84]
+    responsavel = models.CharField(max_length=100) 
+    setor = models.CharField(max_length=100)      
+    montante = models.DecimalField(max_digits=10, decimal_places=2)
+    detalhes = models.TextField()                 
 
     def __str__(self):
         return f"Recebimento {self.id} - {self.responsavel}"
