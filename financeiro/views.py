@@ -26,17 +26,18 @@ def listar_logs(request):
 
 # Função auxiliar para registrar logs de auditoria [cite: 21, 101]
 @login_required
-def registrar_log(request, acao):
+def registrar_log(request, acao, montante):
     LogAcesso.objects.create(
         usuario=request.user if request.user.is_authenticated else None,
         acao=acao,
+        montante=montante,
         ip=request.META.get('REMOTE_ADDR')
     )
 
 # ESTA É A FUNÇÃO QUE ESTÁ FALTANDO NO SEU ERRO
 @login_required
 def index(request):
-    registrar_log(request, "Acesso à página inicial")
+    registrar_log(request, "Acesso à página inicial", 0)
     return render(request, 'core/index.html')
 
 @login_required
@@ -45,7 +46,7 @@ def cadastrar_gasto(request):
         form = GastoForm(request.POST)
         if form.is_valid():
             gasto = form.save()
-            registrar_log(request, f"Cadastro de Gasto realizado: ID {gasto.id}")
+            registrar_log(request, f"Cadastro de Gasto realizado: ID {gasto.id}",gasto.montante)
             return redirect('index')
     else:
         form = GastoForm()
@@ -57,7 +58,7 @@ def cadastrar_recebimento(request):
         form = RecebimentoForm(request.POST)
         if form.is_valid():
             recebimento = form.save()
-            registrar_log(request, f"Cadastro de Recebimento realizado: ID {recebimento.id}")
+            registrar_log(request, f"Cadastro de Recebimento realizado: ID {recebimento.id}", recebimento.montante)
             return redirect('index')
     else:
         form = RecebimentoForm()
