@@ -10,21 +10,21 @@ def e_financeiro(user):
 def e_auditoria(user):
     return user.groups.filter(name='Auditoria').exists()
 
-# Usuário 1: Acesso apenas a Cadastros [cite: 17, 18]
+# Usuário 1: Acesso apenas a Cadastros 
 @login_required
 @user_passes_test(e_financeiro)
 def cadastrar_gasto(request):
     # ... código existente ...
     return render(request, 'core/form.html', {'form': form, 'titulo': 'Cadastro de Gastos'})
 
-# Usuário 2: Acesso apenas a Logs de Auditoria [cite: 21, 108]
+# Usuário 2: Acesso apenas a Logs de Auditoria 
 @login_required
 @user_passes_test(e_auditoria)
 def listar_logs(request):
     logs = LogAcesso.objects.all().order_by('-data_hora')
     return render(request, 'core/logs.html', {'logs': logs})
 
-# Função auxiliar para registrar logs de auditoria [cite: 21, 101]
+# Função auxiliar para registrar logs de auditoria
 @login_required
 def registrar_log(request, acao, montante):
     LogAcesso.objects.create(
@@ -34,7 +34,7 @@ def registrar_log(request, acao, montante):
         ip=request.META.get('REMOTE_ADDR')
     )
 
-# ESTA É A FUNÇÃO QUE ESTÁ FALTANDO NO SEU ERRO
+
 @login_required
 def index(request):
     registrar_log(request, "Acesso à página inicial", 0)
