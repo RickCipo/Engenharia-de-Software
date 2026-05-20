@@ -14,7 +14,6 @@ def e_auditoria(user):
 @login_required
 @user_passes_test(e_financeiro)
 def cadastrar_gasto(request):
-    # ... código existente ...
     return render(request, 'core/form.html', {'form': form, 'titulo': 'Cadastro de Gastos'})
 
 # Usuário 2: Acesso apenas a Logs de Auditoria 
